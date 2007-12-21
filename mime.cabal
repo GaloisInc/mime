@@ -1,0 +1,25 @@
+name:               web
+version:            0.1
+synopsis:           Working with MIME types.
+description:        Working with MIME types.
+category:           Web
+license:            BSD3
+license-file:       LICENSE
+author:             Galois Inc.
+maintainer:         Galois Inc
+Copyright:          (c) 2007 Galois Inc.
+extra-source-files: scripts/json-rpc.js
+homepage:           http://docserver/web.git/
+cabal-version:      >= 1.2.0
+
+flag split-base
+
+library
+  if flag(split-base)
+    build-depends:   base >= 3
+  else
+    build-depends:   base < 3
+
+  exposed-modules: MIME.Type, MIME.Parse, MIME.Utils
+  other-modules:   MIME.Base64, MIME.Decode, MIME.QuotedPrintable
+  ghc-options:     -Wall -O2
