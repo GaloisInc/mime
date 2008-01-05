@@ -1,4 +1,17 @@
-module MIME.QuotedPrintable where
+--------------------------------------------------------------------
+-- |
+-- Module    : Codec.MIME.QuotedPrintable
+-- Copyright : (c) Galois, Inc. 2008
+-- License   : BSD3
+--
+-- Maintainer: 
+-- Stability : provisional
+-- Portability:
+--
+--------------------------------------------------------------------
+
+
+module Codec.MIME.QuotedPrintable where
 
 import Data.Char
 

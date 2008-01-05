@@ -8,11 +8,11 @@
 
   Extracting content from MIME values and types.
 -}
-module MIME.Utils
+module Codec.MIME.Utils
   ( findMultipartNamed -- :: String -> MIMEValue -> Maybe MIMEValue
   )  where
 
-import MIME.Type
+import Codec.MIME.Type
 import Data.List ( find )
 import Control.Monad ( msum )
 

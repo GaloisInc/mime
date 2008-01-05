@@ -1,7 +1,7 @@
 {- |
  
-  Module      :  MIME.Parse
-  Copyright   :  (c) 2006
+  Module      :  Codec.MIME.Parse
+  Copyright   :  (c) 2006-2007
 
   Maintainer      : 
   Stability       : unstable
@@ -9,17 +9,17 @@
   
   Base64 decoding and encoding routines.
 -}
-module MIME.Base64 
+module Codec.MIME.Base64 
         ( encodeRaw         -- :: Bool -> String -> [Word8]
-	, encodeRawString   -- :: Bool -> String -> String
-	, encodeRawPrim     -- :: Bool -> Char -> Char -> [Word8] -> String
+        , encodeRawString   -- :: Bool -> String -> String
+        , encodeRawPrim     -- :: Bool -> Char -> Char -> [Word8] -> String
 
-	, formatOutput      -- :: Int    -> Maybe String -> String -> String
-	
-	, decode            -- :: String -> [Word8]
-	, decodeToString    -- :: String -> String
-	, decodePrim        -- :: Char -> Char -> String -> [Word8]
-	) where
+        , formatOutput      -- :: Int    -> Maybe String -> String -> String
+
+        , decode            -- :: String -> [Word8]
+        , decodeToString    -- :: String -> String
+        , decodePrim        -- :: Char -> Char -> String -> [Word8]
+        ) where
 
 import Data.Bits
 import Data.Char
@@ -44,7 +44,7 @@ formatOutput n mbTerm str
      chop i xs =
        case splitAt i xs of
          (as,"") -> as
-	 (as,bs) -> as ++ crlf ++ chop i bs
+         (as,bs) -> as ++ crlf ++ chop i bs
 
 encodeRaw :: Bool -> [Word8] -> String
 encodeRaw trail bs = encodeRawPrim trail '+' '/' bs
@@ -74,7 +74,7 @@ encode3 f a b c rs =
     w24 :: Word32
     w24 = (fromIntegral a `shiftL` 16) +
           (fromIntegral b `shiftL` 8)  + 
- 	   fromIntegral c
+           fromIntegral c
 
 decodeToString :: String -> String
 decodeToString str = map (chr.fromIntegral) $ decode str

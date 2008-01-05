@@ -1,7 +1,7 @@
 {- |
  
   Module      :  MIME.Type
-  Copyright   :  (c) 2006
+  Copyright   :  (c) 2006-2007 Galois Inc.
 
   Maintainer      : tse-dev-team@galois.com
   Stability       : unstable
@@ -9,7 +9,8 @@
   
   Representing MIME types and values.
 -}
-module MIME.Type where
+
+module Codec.MIME.Type where
 
 import Data.List ( concatMap, isSuffixOf )
 

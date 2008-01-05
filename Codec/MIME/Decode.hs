@@ -1,8 +1,21 @@
-module MIME.Decode where
+--------------------------------------------------------------------
+-- |
+-- Module    : Codec.MIME.Decode
+-- Copyright : (c) Galois, Inc. 2006..2008
+-- License   : BSD3
+--
+-- Maintainer: Don Stewart <dons@galois.com>
+-- Stability : provisional
+-- Portability:
+--
+--------------------------------------------------------------------
+
+module Codec.MIME.Decode where
 
 import Data.Char
-import MIME.QuotedPrintable as QP
-import MIME.Base64 as Base64
+
+import Codec.MIME.QuotedPrintable as QP
+import Codec.MIME.Base64 as Base64
 
 decodeBody :: String -> String -> String
 decodeBody enc body =

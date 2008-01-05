@@ -1,6 +1,6 @@
 {- |
   Module      :  MIME.Parse
-  Copyright   :  (c) 2006
+  Copyright   :  (c) 2006-2007 Galois Inc.
 
   Maintainer      : tse-dev-team@galois.com
   Stability       : unstable
@@ -8,13 +8,13 @@
 
   Parsing MIME content.
 -}
-module MIME.Parse
+module Codec.MIME.Parse
   ( parseMIMEBody
   , parseMIMEType
   ) where
 
-import MIME.Type
-import MIME.Decode
+import Codec.MIME.Type
+import Codec.MIME.Decode
 
 import Data.Char
 import Data.Maybe
