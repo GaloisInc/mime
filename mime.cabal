@@ -1,5 +1,5 @@
 name:               mime
-version:            0.1
+version:            0.2
 synopsis:           Working with MIME types.
 description:        Working with MIME types.
 category:           Web
@@ -7,9 +7,7 @@ license:            BSD3
 license-file:       LICENSE
 author:             Galois Inc.
 maintainer:         Galois Inc
-Copyright:          (c) 2007 Galois Inc.
-extra-source-files: scripts/json-rpc.js
-homepage:           http://docserver/mime.git/
+Copyright:          (c) 2006-2008 Galois Inc.
 cabal-version:      >= 1.2.0
 
 flag split-base
@@ -20,6 +18,10 @@ library
   else
     build-depends:   base < 3
 
-  exposed-modules: MIME.Type, MIME.Parse, MIME.Utils
-  other-modules:   MIME.Base64, MIME.Decode, MIME.QuotedPrintable
+  exposed-modules: Codec.MIME.Type
+                   Codec.MIME.Parse
+                   Codec.MIME.Utils
+  other-modules:   Codec.MIME.Base64
+                   Codec.MIME.Decode
+                   Codec.MIME.QuotedPrintable
   ghc-options:     -Wall -O2
