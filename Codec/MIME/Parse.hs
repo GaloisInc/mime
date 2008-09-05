@@ -157,7 +157,8 @@ parseParams :: String -> [(String,String)]
 parseParams "" = []
 parseParams (';':xs) =
     case break (=='=') (dropFoldingWSP xs) of
-      (nm,_:vs) ->
+      (nm1,_:vs) ->
+        let nm = map toLower nm1 in
         case vs of
           '"':vs1 ->
              case break (=='"') vs1 of
