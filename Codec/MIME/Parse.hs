@@ -187,7 +187,6 @@ mediaTypes =
                           'x':'-':_ -> Extension b
                           _ -> OtherMulti b
 
-
 multipartTypes :: [(String, Multipart)]
 multipartTypes =
   [ ("alternative", Alternative)
