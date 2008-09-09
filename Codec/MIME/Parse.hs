@@ -31,7 +31,7 @@ parseMIMEBody headers_in body =
 
  where headers = [ (map toLower k,v) | (k,v) <- headers_in ]
        mty = fromMaybe defaultType
-                       (parseContentType =<< lookup "content-type" headers)
+                       (parseContentType =<< lookupField "content-type" headers)
 defaultType :: Type
 defaultType = Type { mimeType   = Text "plain"
                    , mimeParams = [("charset", "us-ascii")]
@@ -39,7 +39,7 @@ defaultType = Type { mimeType   = Text "plain"
 
 parseContentDisp :: [(String,String)] -> Maybe Disposition
 parseContentDisp headers =
-  (processDisp . dropFoldingWSP) =<< lookup "content-disposition" headers
+  (processDisp . dropFoldingWSP) =<< lookupField "content-disposition" headers
   where
   processDisp "" = Nothing
   processDisp xs = Just $
@@ -72,7 +72,7 @@ parseContentDisp headers =
 
 processBody :: [(String,String)] -> String -> String
 processBody headers body =
-  case lookup "content-transfer-encoding" headers of
+  case lookupField "content-transfer-encoding" headers of
     Nothing -> body
     Just v  -> decodeBody v body
 
@@ -99,7 +99,7 @@ parseHeaders str =
 
 parseMultipart :: Type -> String -> (MIMEValue, String)
 parseMultipart mty body =
-  case lookup "boundary" (mimeParams mty) of
+  case lookupField "boundary" (mimeParams mty) of
     Nothing -> trace ("Multipart mime type, " ++ showType mty ++
       ", has no required boundary parameter. Defaulting to text/plain") $
       (MIMEValue defaultType Nothing (Single body), "")
@@ -148,7 +148,7 @@ parseContentType str =
                          }
        _ -> trace ("unable to parse content-type: " ++ show str) $ Nothing
  where
-  toType a b = case lookup (map toLower a) mediaTypes of
+  toType a b = case lookupField (map toLower a) mediaTypes of
                  Just ctor -> ctor b
                  _ -> Other a b
 
@@ -157,8 +157,8 @@ parseParams :: String -> [(String,String)]
 parseParams "" = []
 parseParams (';':xs) =
     case break (=='=') (dropFoldingWSP xs) of
-      (nm1,_:vs) ->
-        let nm = map toLower nm1 in
+      (_,[]) -> []
+      (nm_raw,_:vs) ->
         case vs of
           '"':vs1 ->
              case break (=='"') vs1 of
@@ -166,9 +166,10 @@ parseParams (';':xs) =
                (val,_:zs) -> (nm,val):parseParams (dropWhile isHSpace zs)
           _ -> case break (\ ch -> isHSpace ch || isTSpecial ch) vs of
                  (val,zs) -> (nm,val):parseParams (dropWhile isHSpace zs)
-      _ -> []
+       where
+        nm = map toLower nm_raw
 
-parseParams cs = trace ("curious: " ++ show cs) []
+parseParams cs = trace ("Codec.MIME.Parse.parseParams: curious param value -- " ++ show cs) []
 
 mediaTypes :: [(String, String -> MIMEType)]
 mediaTypes =
@@ -181,7 +182,7 @@ mediaTypes =
   , ("text",        Text)
   , ("video",       Video)
   ]
- where toMultipart b = fromMaybe other (lookup (map toLower b) multipartTypes)
+ where toMultipart b = fromMaybe other (lookupField (map toLower b) multipartTypes)
           where other = case b of
                           'x':'-':_ -> Extension b
                           _ -> OtherMulti b
@@ -240,3 +241,17 @@ takeUntilCRLF str = go "" str
    | otherwise  = (reverse (dropWhile isHSpace acc), x:xs)
   go acc (x:xs) = go (x:acc) xs
 
+-- case in-sensitive lookup of field names or attributes\/parameters.
+lookupField :: String -> [(String,a)] -> Maybe a
+lookupField n ns = 
+   -- assume that inputs have been mostly normalized already 
+   -- (i.e., lower-cased), but should the lookup fail fall back
+   -- to a second try where we do normalize before giving up.
+  case lookup n ns of
+    x@Just{} -> x
+    Nothing  -> 
+      let nl = map toLower n in
+      case find (\ (y,_) -> nl == map toLower y) ns of
+        Nothing -> Nothing
+	Just (_,x)  -> Just x
+      
