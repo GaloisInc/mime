@@ -40,17 +40,16 @@ encode xs = encodeLength 0 xs
 
 encodeLength :: Int -> String -> String
 encodeLength _ "" = ""
-encodeLength n ('=':xs) 
- | n <= 72   = '=':'3':'D':encodeLength (n+3) xs
- | otherwise = '=':'\r':'\n': encodeLength 0 ('=':xs)
 encodeLength n (x:xs)
- | n >= 75  = '=':'\r':'\n':encodeLength 0 (x:xs)
- | ox >= 0x21 && ox <= 0x7e = x : encodeLength (n+1) xs
- | (ox == 0x09 || ox == 0x20) && n < 74 = x : encodeLength (n+1) xs
+ | n >= 72  = '=':'\r':'\n':encodeLength 0 (x:xs)
+encodeLength n ('=':xs) 
+ = '=':'3':'D':encodeLength 0 xs
+encodeLength n (x:xs)
  | ox >= 0x100 = error ("QuotedPrintable.encode: encountered > 8 bit character: " ++ show (x,ox))
- 
- | n <= 72 = '=':showH (ox `div` 16) : showH (ox `mod` 16) : encodeLength (n+3) xs
- | otherwise =  '=':'\r':'\n':encodeLength 0 (x:xs)
+ | n >= 72     = '=':'\r':'\n':encodeLength 0 (x:xs)
+ | ox >= 0x21 && ox <= 0x7e = x : encodeLength (n+1) xs
+ | ox == 0x09 || ox == 0x20 = x : encodeLength (n+1) xs
+ | otherwise = '=':'\r':'\n':encodeLength 0 (x:xs)
  where
   ox = ord x
   showH v
