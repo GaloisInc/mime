@@ -4,7 +4,7 @@
 -- Copyright : (c) Galois, Inc. 2008
 -- License   : BSD3
 --
--- Maintainer: 
+-- Maintainer: Sigbjorn Finne <sof@galois.com>
 -- Stability : provisional
 -- Portability:
 --
@@ -42,14 +42,14 @@ encodeLength :: Int -> String -> String
 encodeLength _ "" = ""
 encodeLength n (x:xs)
  | n >= 72  = '=':'\r':'\n':encodeLength 0 (x:xs)
-encodeLength n ('=':xs) 
+encodeLength _ ('=':xs) 
  = '=':'3':'D':encodeLength 0 xs
 encodeLength n (x:xs)
  | ox >= 0x100 = error ("QuotedPrintable.encode: encountered > 8 bit character: " ++ show (x,ox))
  | n >= 72     = '=':'\r':'\n':encodeLength 0 (x:xs)
  | ox >= 0x21 && ox <= 0x7e = x : encodeLength (n+1) xs
  | ox == 0x09 || ox == 0x20 = x : encodeLength (n+1) xs
- | otherwise = '=':'\r':'\n':encodeLength 0 (x:xs)
+ | otherwise = '=':showH (ox `div` 0x10): showH (ox `mod` 0x10):encodeLength (n+3) xs
  where
   ox = ord x
   showH v

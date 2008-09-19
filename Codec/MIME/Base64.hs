@@ -1,9 +1,9 @@
 {- |
  
   Module      :  Codec.MIME.Parse
-  Copyright   :  (c) 2006-2007
+  Copyright   :  (c) 2006-2008
 
-  Maintainer      : 
+  Maintainer      : Sigbjorn Finne <sof@galois.com>
   Stability       : unstable
   Portability     : GHC
   

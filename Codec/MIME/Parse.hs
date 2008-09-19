@@ -1,8 +1,8 @@
 {- |
-  Module      :  MIME.Parse
-  Copyright   :  (c) 2006-2007 Galois Inc.
+  Module      :  Codec.MIME.Parse
+  Copyright   :  (c) 2006-2008 Galois Inc.
 
-  Maintainer      : tse-dev-team@galois.com
+  Maintainer      : Sigbjorn Finne <sof@galois.com>
   Stability       : unstable
   Portability     : GHC
 

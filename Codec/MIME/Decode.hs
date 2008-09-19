@@ -1,10 +1,10 @@
 --------------------------------------------------------------------
 -- |
 -- Module    : Codec.MIME.Decode
--- Copyright : (c) Galois, Inc. 2006..2008
+-- Copyright : (c) 2006-2008, Galois, Inc. 
 -- License   : BSD3
 --
--- Maintainer: Don Stewart <dons@galois.com>
+-- Maintainer: Sigbjorn Finne <sof@galois.com>
 -- Stability : provisional
 -- Portability:
 --
@@ -24,7 +24,7 @@ decodeBody enc body =
    "quoted-printable" -> QP.decode body
    _ -> body
 
--- Decoding of RFC 2047's "encoded-words' production
+-- Decoding of RFC 2047's "encoded-words" production
 -- (as used in email-headers and some HTTP header cases
 -- (AtomPub's Slug: header))
 decodeWord :: String -> Maybe (String, String)

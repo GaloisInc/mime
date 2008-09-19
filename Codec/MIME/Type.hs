@@ -1,9 +1,10 @@
 {- |
  
   Module      :  MIME.Type
-  Copyright   :  (c) 2006-2007 Galois Inc.
+  Copyright   :  (c) 2006-2008, Galois Inc.
+- License     : BSD3
 
-  Maintainer      : tse-dev-team@galois.com
+  Maintainer      : Sigbjorn Finne <sof@galois.com>
   Stability       : unstable
   Portability     : GHC
   
