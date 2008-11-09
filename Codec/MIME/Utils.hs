@@ -1,5 +1,5 @@
 {- |
-  Module      :  MIME.Utils
+  Module      :  Codec.MIME.Utils
   Copyright   :  (c) 2007-2008, Galois, Inc.
   License   : BSD3
 

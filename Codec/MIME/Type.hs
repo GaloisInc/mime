@@ -1,6 +1,6 @@
 {- |
  
-  Module      :  MIME.Type
+  Module      :  Codec.MIME.Type
   Copyright   :  (c) 2006-2008, Galois Inc.
 - License     : BSD3
 
@@ -21,13 +21,19 @@ data Type
     , mimeParams :: [(String,String)]
     } deriving ( Show, Ord, Eq )
 
+nullType :: Type
+nullType = Type
+    { mimeType   = Text "plain"
+    , mimeParams = []
+    }
+
 showType :: Type -> String
 showType t = showMIMEType (mimeType t) ++ showMIMEParams (mimeParams t)
 
 showMIMEParams :: [(String,String)] -> String
 showMIMEParams ps = concatMap showP ps
  where 
-  showP (a,b) = ';':a ++ '=':'"':b ++ "\""
+  showP (a,b) = ';':' ':a ++ '=':'"':b ++ "\""
 
 
 data MIMEType
@@ -133,11 +139,22 @@ showMultipart m =
    
 type Content = String
 
-data MIMEValue = MIMEValue {
-  mime_val_type :: Type,
-  mime_val_disp :: Maybe Disposition,
-  mime_val_content :: MIMEContent }
-  deriving ( Show, Eq )
+data MIMEValue = MIMEValue
+      { mime_val_type     :: Type
+      , mime_val_disp     :: Maybe Disposition
+      , mime_val_content  :: MIMEContent
+      , mime_val_headers  :: [(String,String)]
+      , mime_val_inc_type :: Bool
+      } deriving ( Show, Eq )
+
+nullMIMEValue :: MIMEValue
+nullMIMEValue = MIMEValue
+      { mime_val_type     = nullType
+      , mime_val_disp     = Nothing
+      , mime_val_content  = Multi []
+      , mime_val_headers  = []
+      , mime_val_inc_type = True
+      } 
 
 data MIMEContent 
   = Single Content

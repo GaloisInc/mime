@@ -1,5 +1,5 @@
 name:               mime
-version:            0.2.2
+version:            0.3.0
 synopsis:           Working with MIME types.
 description:        Working with MIME types.
 category:           Codec
@@ -23,6 +23,6 @@ library
                    Codec.MIME.Parse
                    Codec.MIME.Utils
                    Codec.MIME.Base64
-  other-modules:   Codec.MIME.Decode
+                   Codec.MIME.Decode
                    Codec.MIME.QuotedPrintable
   ghc-options:     -Wall -O2

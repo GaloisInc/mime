@@ -26,8 +26,11 @@ parseMIMEBody headers_in body =
   case mimeType mty of
     Multipart{} -> fst (parseMultipart mty body)
     Message{}   -> fst (parseMultipart mty body)
-    _           -> MIMEValue mty (parseContentDisp headers)
-                                 (Single (processBody headers body))
+    _           -> nullMIMEValue 
+                    { mime_val_type    = mty
+	            , mime_val_disp    = parseContentDisp headers
+	            , mime_val_content = Single (processBody headers body)
+ 	            }
 
  where headers = [ (map toLower k,v) | (k,v) <- headers_in ]
        mty = fromMaybe defaultType
@@ -102,8 +105,14 @@ parseMultipart mty body =
   case lookupField "boundary" (mimeParams mty) of
     Nothing -> trace ("Multipart mime type, " ++ showType mty ++
       ", has no required boundary parameter. Defaulting to text/plain") $
-      (MIMEValue defaultType Nothing (Single body), "")
-    Just bnd -> (MIMEValue mty Nothing (Multi vals), rs)
+      (nullMIMEValue{ mime_val_type = defaultType
+                    , mime_val_disp = Nothing
+		    , mime_val_content = Single body
+		    }, "")
+    Just bnd -> (nullMIMEValue { mime_val_type = mty
+                               , mime_val_disp = Nothing
+			       , mime_val_content = Multi vals
+			       }, rs)
       where (vals,rs) = splitMulti bnd body
 
 splitMulti :: String -> String -> ([MIMEValue], String)
