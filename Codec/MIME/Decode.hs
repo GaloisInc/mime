@@ -1,13 +1,15 @@
 --------------------------------------------------------------------
 -- |
 -- Module    : Codec.MIME.Decode
--- Copyright : (c) 2006-2008, Galois, Inc. 
+-- Copyright : (c) 2006-2009, Galois, Inc. 
 -- License   : BSD3
 --
 -- Maintainer: Sigbjorn Finne <sof@galois.com>
 -- Stability : provisional
--- Portability:
+-- Portability: portable
 --
+-- 
+-- 
 --------------------------------------------------------------------
 
 module Codec.MIME.Decode where
@@ -17,6 +19,11 @@ import Data.Char
 import Codec.MIME.QuotedPrintable as QP
 import Codec.MIME.Base64 as Base64
 
+-- | @decodeBody enc str@ decodes @str@ according to the scheme
+-- specified by @enc@. Currently, @base64@ and @quoted-printable@ are
+-- the only two encodings supported. If you supply anything else
+-- for @enc@, @decodeBody@ returns @str@.
+-- 
 decodeBody :: String -> String -> String
 decodeBody enc body =
  case map toLower enc of

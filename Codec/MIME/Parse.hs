@@ -1,13 +1,16 @@
-{- |
-  Module      :  Codec.MIME.Parse
-  Copyright   :  (c) 2006-2008 Galois Inc.
-
-  Maintainer      : Sigbjorn Finne <sof@galois.com>
-  Stability       : unstable
-  Portability     : GHC
-
-  Parsing MIME content.
--}
+--------------------------------------------------------------------
+-- |
+-- Module    : Codec.MIME.Pare
+-- Copyright : (c) 2006-2009, Galois, Inc. 
+-- License   : BSD3
+--
+-- Maintainer: Sigbjorn Finne <sof@galois.com>
+-- Stability : provisional
+-- Portability: portable
+--
+-- Parsing MIME content.
+-- 
+--------------------------------------------------------------------
 module Codec.MIME.Parse
   ( parseMIMEBody
   , parseMIMEType

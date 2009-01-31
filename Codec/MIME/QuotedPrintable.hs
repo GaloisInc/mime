@@ -1,16 +1,16 @@
 --------------------------------------------------------------------
 -- |
 -- Module    : Codec.MIME.QuotedPrintable
--- Copyright : (c) Galois, Inc. 2008
+-- Copyright : (c) 2006-2009, Galois, Inc. 
 -- License   : BSD3
 --
 -- Maintainer: Sigbjorn Finne <sof@galois.com>
 -- Stability : provisional
 -- Portability:
 --
+-- 
+--
 --------------------------------------------------------------------
-
-
 module Codec.MIME.QuotedPrintable 
        ( decode -- :: String -> String
        , encode -- :: String -> String
@@ -19,7 +19,9 @@ module Codec.MIME.QuotedPrintable
 import Data.Char
 
 -- | 'decode' incoming quoted-printable content, stripping
--- out soft line breaks and 
+-- out soft line breaks and translating @=XY@ sequences
+-- into their decoded byte\/octet. The output encoding\/representation 
+-- is still a String, not a sequence of bytes.
 decode :: String -> String
 decode "" = ""
 decode ('=':'\r':'\n':xs) = decode xs -- soft line break.
@@ -38,6 +40,10 @@ decode (x1:xs) = x1:decode xs
 encode :: String -> String
 encode xs = encodeLength 0 xs
 
+-- | @encodeLength llen str@ is the worker function during encoding.
+-- The extra argument @llen@ tracks the current column for the line
+-- being processed. Soft line breaks are inserted if a line exceeds
+-- a max length.
 encodeLength :: Int -> String -> String
 encodeLength _ "" = ""
 encodeLength n (x:xs)

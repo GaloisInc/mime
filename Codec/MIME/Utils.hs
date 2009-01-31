@@ -1,14 +1,16 @@
-{- |
-  Module      :  Codec.MIME.Utils
-  Copyright   :  (c) 2007-2008, Galois, Inc.
-  License   : BSD3
-
-  Maintainer      : Sigbjorn Finne <sof@galois.com>
-  Stability       : unstable
-  Portability     : GHC
-
-  Extracting content from MIME values and types.
--}
+--------------------------------------------------------------------
+-- |
+-- Module    : Codec.MIME.Utils
+-- Copyright : (c) 2006-2009, Galois, Inc. 
+-- License   : BSD3
+--
+-- Maintainer: Sigbjorn Finne <sof@galois.com>
+-- Stability : provisional
+-- Portability: portable
+--
+-- Extracting content from MIME values and types.
+-- 
+--------------------------------------------------------------------
 module Codec.MIME.Utils
   ( findMultipartNamed -- :: String -> MIMEValue -> Maybe MIMEValue
   )  where

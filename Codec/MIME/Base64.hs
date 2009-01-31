@@ -1,14 +1,20 @@
-{- |
- 
-  Module      :  Codec.MIME.Parse
-  Copyright   :  (c) 2006-2008
-
-  Maintainer      : Sigbjorn Finne <sof@galois.com>
-  Stability       : unstable
-  Portability     : GHC
-  
-  Base64 decoding and encoding routines.
--}
+--------------------------------------------------------------------
+-- |
+-- Module    : Codec.MIME.Base64
+-- Copyright : (c) 2006-2009, Galois, Inc. 
+-- License   : BSD3
+--
+-- Maintainer: Sigbjorn Finne <sof@galois.com>
+-- Stability : provisional
+-- Portability: portable
+--
+-- 
+-- Base64 decoding and encoding routines, multiple entry
+-- points for either depending on use and level of control
+-- wanted over the encoded output (and its input form on the
+-- decoding side.)
+-- 
+--------------------------------------------------------------------
 module Codec.MIME.Base64 
         ( encodeRaw         -- :: Bool -> String -> [Word8]
         , encodeRawString   -- :: Bool -> String -> String
@@ -29,12 +35,12 @@ import Data.Maybe
 encodeRawString :: Bool -> String -> String
 encodeRawString trail xs = encodeRaw trail (map (fromIntegral.ord) xs)
 
--- | 'formatOutput n mbLT str' formats 'str', splitting it
--- into lines of length 'n'. The optional value lets you control what
+-- | @formatOutput n mbLT str@ formats @str@, splitting it
+-- into lines of length @n@. The optional value lets you control what
 -- line terminator sequence to use; the default is CRLF (as per MIME.)
 formatOutput :: Int -> Maybe String -> String -> String
 formatOutput n mbTerm str
- | n <= 0    = error ("formatOutput: negative line length " ++ show n)
+ | n <= 0    = error ("Codec.MIME.Base64.formatOutput: negative line length " ++ show n)
  | otherwise = chop n str
    where
      crlf :: String
@@ -49,8 +55,8 @@ formatOutput n mbTerm str
 encodeRaw :: Bool -> [Word8] -> String
 encodeRaw trail bs = encodeRawPrim trail '+' '/' bs
 
--- lets you control what non-alphanum characters to use
--- (The base64url variation uses '*' and '-', for instance.)
+-- | @encodeRawPrim@ lets you control what non-alphanum characters to use
+-- (The base64url variation uses @*@ and @-@, for instance.)
 -- No support for mapping these to multiple characters in the output though.
 encodeRawPrim :: Bool -> Char -> Char -> [Word8] -> String
 encodeRawPrim trail ch62 ch63 ls = encoder ls

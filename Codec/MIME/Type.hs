@@ -1,16 +1,17 @@
-{- |
- 
-  Module      :  Codec.MIME.Type
-  Copyright   :  (c) 2006-2008, Galois Inc.
-- License     : BSD3
-
-  Maintainer      : Sigbjorn Finne <sof@galois.com>
-  Stability       : unstable
-  Portability     : GHC
-  
-  Representing MIME types and values.
--}
-
+--------------------------------------------------------------------
+-- |
+-- Module    : Codec.MIME.Type
+-- Copyright : (c) 2006-2009, Galois, Inc. 
+-- License   : BSD3
+--
+-- Maintainer: Sigbjorn Finne <sof@galois.com>
+-- Stability : provisional
+-- Portability: portable
+--
+-- 
+-- Representing MIME types and values.
+-- 
+--------------------------------------------------------------------
 module Codec.MIME.Type where
 
 import Data.List ( concatMap, isSuffixOf )
@@ -21,6 +22,7 @@ data Type
     , mimeParams :: [(String,String)]
     } deriving ( Show, Ord, Eq )
 
+-- | The @null@ MIME record type value; currently a @text/plain@.
 nullType :: Type
 nullType = Type
     { mimeType   = Text "plain"
