@@ -4,7 +4,7 @@
 -- Copyright : (c) 2006-2009, Galois, Inc. 
 -- License   : BSD3
 --
--- Maintainer: Sigbjorn Finne <sof@galois.com>
+-- Maintainer: Sigbjorn Finne <sigbjorn.finne@gmail.com>
 -- Stability : provisional
 -- Portability: portable
 --
@@ -12,8 +12,14 @@
 -- 
 --------------------------------------------------------------------
 module Codec.MIME.Parse
-  ( parseMIMEBody
-  , parseMIMEType
+  ( parseMIMEBody    -- :: [(String,String)] -> String -> MIMEValue
+  , parseMIMEType    -- :: String -> Maybe Type
+  , parseMIMEMessage -- :: String -> MIMEValue
+
+  , parseHeaders     -- :: String -> ([(String,String)], String)
+  , parseMultipart   -- :: Type -> String -> (MIMEValue, String)
+  , parseContentType -- :: String -> Maybe Type
+  , splitMulti       -- :: String -> String -> ([MIMEValue], String)
   ) where
 
 import Codec.MIME.Type
@@ -74,7 +80,6 @@ parseContentDisp headers =
                    "attachment" -> DispAttachment
                    "form-data"  -> DispFormData
                    _            -> DispOther t
-
 
 processBody :: [(String,String)] -> String -> String
 processBody headers body =
@@ -164,7 +169,6 @@ parseContentType str =
                  Just ctor -> ctor b
                  _ -> Other a b
 
-
 parseParams :: String -> [(String,String)]
 parseParams "" = []
 parseParams (';':xs) =
@@ -199,7 +203,6 @@ mediaTypes =
                           'x':'-':_ -> Extension b
                           _ -> OtherMulti b
 
-
 multipartTypes :: [(String, Multipart)]
 multipartTypes =
   [ ("alternative", Alternative)
@@ -212,7 +215,6 @@ multipartTypes =
   , ("related",     Related)
   , ("signed",      Signed)
   ]
-
 
 untilMatch :: String -> String -> Maybe String
 untilMatch str xs = go str xs
@@ -227,14 +229,11 @@ matchUntil str xs
   | str `isPrefixOf` xs = ("", drop (length str) xs)
 matchUntil str (x:xs) = let (as,bs) = matchUntil str xs in (x:as,bs)
 
-
-
 isHSpace :: Char -> Bool
 isHSpace c = c == ' ' || c == '\t'
 
 isTSpecial :: Char -> Bool
-isTSpecial x = x `elem` "()<>@,;:\\\"/[]?="
-
+isTSpecial x = x `elem` "()<>@,;:\\\"/[]?=" -- "
 
 dropFoldingWSP :: String -> String
 dropFoldingWSP "" = ""

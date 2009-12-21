@@ -1,0 +1,5 @@
+Version 0.3.2: released 2009-12-21
+
+* sub-point release.
+* extend exports of Codec.MIME.Parse to include misc
+  local utility functions: parseMIMEMessage, parseContentType

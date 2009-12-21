@@ -4,11 +4,11 @@
 -- Copyright : (c) 2006-2009, Galois, Inc. 
 -- License   : BSD3
 --
--- Maintainer: Sigbjorn Finne <sof@galois.com>
+-- Maintainer: Sigbjorn Finne <sigbjorn.finne@gmail.com>
 -- Stability : provisional
 -- Portability:
 --
--- 
+-- To and from QP content encoding.
 --
 --------------------------------------------------------------------
 module Codec.MIME.QuotedPrintable 

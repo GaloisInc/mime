@@ -4,7 +4,7 @@
 -- Copyright : (c) 2006-2009, Galois, Inc. 
 -- License   : BSD3
 --
--- Maintainer: Sigbjorn Finne <sof@galois.com>
+-- Maintainer: Sigbjorn Finne <sigbjorn.finne@gmail.com>
 -- Stability : provisional
 -- Portability: portable
 --
@@ -30,4 +30,3 @@ findMultipartNamed nm mv =
                    return mv
  where withDispName a (Name b) = a == b
        withDispName _ _ = False
-
