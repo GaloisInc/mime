@@ -16,9 +16,9 @@ flag split-base
 
 library
   if flag(split-base)
-    build-depends:   base >= 3
+    build-depends:   base >= 3 && <= 4
   else
-    build-depends:   base < 3
+    build-depends:   base >= 2 && <= 4
 
   exposed-modules: Codec.MIME.Type
                    Codec.MIME.Parse
@@ -26,4 +26,4 @@ library
                    Codec.MIME.Base64
                    Codec.MIME.Decode
                    Codec.MIME.QuotedPrintable
-  ghc-options:     -Wall -O2
+  ghc-options:     -Wall
