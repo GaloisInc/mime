@@ -1,5 +1,5 @@
 name:               mime
-version:            0.3.2
+version:            0.3.3
 synopsis:           Working with MIME types.
 description:        Working with MIME types.
 category:           Codec
@@ -12,13 +12,8 @@ cabal-version:      >= 1.2.0
 build-type:         Simple
 Extra-Source-Files: CHANGES
 
-flag split-base
-
 library
-  if flag(split-base)
-    build-depends:   base >= 3 && <= 4
-  else
-    build-depends:   base >= 2 && <= 4
+  build-depends:   base >= 3 && < 5
 
   exposed-modules: Codec.MIME.Type
                    Codec.MIME.Parse
