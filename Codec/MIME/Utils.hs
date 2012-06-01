@@ -26,7 +26,7 @@ findMultipartNamed nm mv =
  case mime_val_content mv of
    Multi ms  -> msum (map (findMultipartNamed nm) ms)
    Single {} -> do cd <- mime_val_disp mv
-                   find (withDispName nm) (dispParams cd)
+                   _ <- find (withDispName nm) (dispParams cd)
                    return mv
  where withDispName a (Name b) = a == b
        withDispName _ _ = False

@@ -27,7 +27,7 @@ import Codec.MIME.Base64 as Base64
 decodeBody :: String -> String -> String
 decodeBody enc body =
  case map toLower enc of
-   "base64"           -> map (chr.fromIntegral) $ Base64.decode body
+   "base64"           -> Base64.decodeToString body
    "quoted-printable" -> QP.decode body
    _ -> body
 

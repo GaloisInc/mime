@@ -31,18 +31,17 @@ import Data.List
 import Debug.Trace ( trace )
 
 parseMIMEBody :: [(String,String)] -> String -> MIMEValue
-parseMIMEBody headers_in body =
-  case mimeType mty of
+parseMIMEBody headers_in body = result { mime_val_headers = headers }
+  where
+  result = case mimeType mty of
     Multipart{} -> fst (parseMultipart mty body)
     Message{}   -> fst (parseMultipart mty body)
-    _           -> nullMIMEValue 
-                    { mime_val_type    = mty
-	            , mime_val_disp    = parseContentDisp headers
-	            , mime_val_content = Single (processBody headers body)
- 	            }
-
- where headers = [ (map toLower k,v) | (k,v) <- headers_in ]
-       mty = fromMaybe defaultType
+    _           -> nullMIMEValue { mime_val_type    = mty
+                                 , mime_val_disp    = parseContentDisp headers
+                                 , mime_val_content = Single (processBody headers body)
+                                 }
+  headers = [ (map toLower k,v) | (k,v) <- headers_in ]
+  mty = fromMaybe defaultType
                        (parseContentType =<< lookupField "content-type" headers)
 defaultType :: Type
 defaultType = Type { mimeType   = Text "plain"
@@ -87,9 +86,16 @@ processBody headers body =
     Nothing -> body
     Just v  -> decodeBody v body
 
+normalizeCRLF :: String -> String
+normalizeCRLF ('\r':'\n':xs) = '\r':'\n':normalizeCRLF xs
+normalizeCRLF ('\r':xs) = '\r':'\n':normalizeCRLF xs
+normalizeCRLF ('\n':xs) = '\r':'\n':normalizeCRLF xs
+normalizeCRLF (x:xs) = x:normalizeCRLF xs
+normalizeCRLF [] = []
+  
 parseMIMEMessage :: String -> MIMEValue
 parseMIMEMessage entity =
-  case parseHeaders entity of
+  case parseHeaders (normalizeCRLF entity) of
    (as,bs) -> parseMIMEBody as bs
 
 parseHeaders :: String -> ([(String,String)], String)
@@ -217,10 +223,10 @@ multipartTypes =
   ]
 
 untilMatch :: String -> String -> Maybe String
-untilMatch str xs = go str xs
-  where go ""     rs      = Just rs
-        go _      ""      = Nothing
-        go (a:as) (b:bs)  = if a == b then go as bs else go str bs
+untilMatch "" a  = Just a
+untilMatch _  "" = Nothing
+untilMatch a b | a `isPrefixOf` b = Just $ drop (length a) b
+untilMatch a (_:bs) = untilMatch a bs
 
 matchUntil :: String -> String -> (String, String)
 matchUntil _   "" = ("", "")

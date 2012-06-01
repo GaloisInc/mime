@@ -14,7 +14,7 @@
 --------------------------------------------------------------------
 module Codec.MIME.Type where
 
-import Data.List ( concatMap, isSuffixOf )
+import Data.List ( isSuffixOf )
 
 data Type
  = Type
