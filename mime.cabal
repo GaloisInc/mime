@@ -1,5 +1,5 @@
 name:               mime
-version:            0.3.3.2
+version:            0.3.4
 synopsis:           Working with MIME types.
 description:        Working with MIME types.
 category:           Codec

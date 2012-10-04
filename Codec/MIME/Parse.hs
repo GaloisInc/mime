@@ -30,6 +30,14 @@ import Data.Maybe
 import Data.List
 import Debug.Trace ( trace )
 
+enableTrace :: Bool
+enableTrace = False
+
+doTrace :: String -> b -> b
+doTrace | enableTrace = trace
+        | otherwise   = \_ x -> x
+
+
 parseMIMEBody :: [(String,String)] -> String -> MIMEValue
 parseMIMEBody headers_in body = result { mime_val_headers = headers }
   where
@@ -117,7 +125,7 @@ parseHeaders str =
 parseMultipart :: Type -> String -> (MIMEValue, String)
 parseMultipart mty body =
   case lookupField "boundary" (mimeParams mty) of
-    Nothing -> trace ("Multipart mime type, " ++ showType mty ++
+    Nothing -> doTrace ("Multipart mime type, " ++ showType mty ++
       ", has no required boundary parameter. Defaulting to text/plain") $
       (nullMIMEValue{ mime_val_type = defaultType
                     , mime_val_disp = Nothing
@@ -169,7 +177,7 @@ parseContentType str =
                Just Type { mimeType = toType maj as
                          , mimeParams = parseParams (dropWhile isHSpace bs)
                          }
-       _ -> trace ("unable to parse content-type: " ++ show str) $ Nothing
+       _ -> doTrace ("unable to parse content-type: " ++ show str) $ Nothing
  where
   toType a b = case lookupField (map toLower a) mediaTypes of
                  Just ctor -> ctor b
@@ -191,7 +199,7 @@ parseParams (';':xs) =
        where
         nm = map toLower nm_raw
 
-parseParams cs = trace ("Codec.MIME.Parse.parseParams: curious param value -- " ++ show cs) []
+parseParams cs = doTrace ("Codec.MIME.Parse.parseParams: curious param value -- " ++ show cs) []
 
 mediaTypes :: [(String, String -> MIMEType)]
 mediaTypes =
