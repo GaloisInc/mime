@@ -1,5 +1,5 @@
 name:               mime
-version:            0.3.4
+version:            0.4.0
 synopsis:           Working with MIME types.
 description:        Working with MIME types.
 category:           Codec
@@ -14,7 +14,8 @@ homepage:           https://github.com/GaloisInc/mime
 Extra-Source-Files: CHANGES
 
 library
-  build-depends:   base >= 3 && < 5
+  build-depends:    base >= 4 && < 5
+                    , text >= 0.9
 
   exposed-modules: Codec.MIME.Type
                    Codec.MIME.Parse

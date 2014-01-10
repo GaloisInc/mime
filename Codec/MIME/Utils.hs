@@ -18,10 +18,11 @@ module Codec.MIME.Utils
 import Codec.MIME.Type
 import Data.List ( find )
 import Control.Monad ( msum )
+import Data.Text(Text)
 
 -- | Given a parameter name, locate it within a MIME value,
 -- returning the corresponding (sub) MIME value.
-findMultipartNamed :: String -> MIMEValue -> Maybe MIMEValue
+findMultipartNamed :: Text -> MIMEValue -> Maybe MIMEValue
 findMultipartNamed nm mv =
  case mime_val_content mv of
    Multi ms  -> msum (map (findMultipartNamed nm) ms)
