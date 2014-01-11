@@ -122,7 +122,7 @@ parseHeaders str =
   findFieldName acc t 
     | T.null t = Right ""
     | "\r\n" `T.isPrefixOf` t = Right $ T.drop 2 t
-    | ":" `T.isPrefixOf` t = Left (T.reverse $ T.dropWhile isHSpace acc, t)
+    | ":" `T.isPrefixOf` t = Left (T.reverse $ T.dropWhile isHSpace acc, T.drop 1 t)
     | otherwise = findFieldName (T.take 1 t <> acc) $ T.drop 1 t
 
   parseFieldValue nm xs 

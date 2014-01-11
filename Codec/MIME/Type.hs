@@ -52,7 +52,7 @@ data MIMEType
  | Multipart   Multipart
  | Text        TextType
  | Video       SubType
- | Other       T.Text SubType
+ | Other       {otherType :: T.Text, otherSubType :: SubType}
    deriving ( Show, Ord, Eq )
 
 showMIMEType :: MIMEType -> T.Text
