@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 --------------------------------------------------------------------
 -- |
 -- Module    : Codec.MIME.Type
@@ -14,12 +15,16 @@
 --------------------------------------------------------------------
 module Codec.MIME.Type where
 
-import Data.List ( isSuffixOf )
+import qualified Data.Text as T
+import Data.Monoid ((<>))
 
-data Type
- = Type
+data MIMEParam = MIMEParam  { paramName     :: T.Text
+                            , paramValue    :: T.Text }
+    deriving (Show, Ord, Eq)
+
+data Type = Type
     { mimeType   :: MIMEType
-    , mimeParams :: [(String,String)]
+    , mimeParams :: [MIMEParam]
     } deriving ( Show, Ord, Eq )
 
 -- | The @null@ MIME record type value; currently a @text/plain@.
@@ -29,13 +34,13 @@ nullType = Type
     , mimeParams = []
     }
 
-showType :: Type -> String
-showType t = showMIMEType (mimeType t) ++ showMIMEParams (mimeParams t)
+showType :: Type -> T.Text
+showType t = showMIMEType (mimeType t) <> showMIMEParams (mimeParams t)
 
-showMIMEParams :: [(String,String)] -> String
-showMIMEParams ps = concatMap showP ps
- where 
-  showP (a,b) = ';':' ':a ++ '=':'"':b ++ "\""
+showMIMEParams :: [MIMEParam] -> T.Text
+showMIMEParams ps = T.concat $ map showP ps
+  where 
+    showP (MIMEParam a b) = "; " <> a <> "=\"" <> b <> "\""
 
 
 data MIMEType
@@ -47,46 +52,41 @@ data MIMEType
  | Multipart   Multipart
  | Text        TextType
  | Video       SubType
- | Other       String SubType
+ | Other       {otherType :: T.Text, otherSubType :: SubType}
    deriving ( Show, Ord, Eq )
 
-showMIMEType :: MIMEType -> String
+showMIMEType :: MIMEType -> T.Text
 showMIMEType t = 
  case t of
-   Application s -> "application/"++s
-   Audio s       -> "audio/"++s
-   Image s       -> "image/"++s
-   Message s     -> "message/"++s
-   Model s       -> "model/"++s
-   Multipart s   -> "multipart/"++showMultipart s
-   Text s        -> "text/"++s
-   Video s       -> "video/"++s
-   Other a b     -> a ++ '/':b
+   Application s -> "application/"<>s
+   Audio s       -> "audio/"<>s
+   Image s       -> "image/"<>s
+   Message s     -> "message/"<>s
+   Model s       -> "model/"<>s
+   Multipart s   -> "multipart/"<>showMultipart s
+   Text s        -> "text/"<>s
+   Video s       -> "video/"<>s
+   Other a b     -> a <> "/" <> b
 
 -- | a (type, subtype) MIME pair.
 data MIMEPair
- = MIMEPair String SubType
+ = MIMEPair T.Text SubType
    deriving ( Eq )
 
-showMIMEPair :: MIMEPair -> String
-showMIMEPair (MIMEPair a b) = a ++ '/':b
+showMIMEPair :: MIMEPair -> T.Text
+showMIMEPair (MIMEPair a b) = a <> "/" <> b
 
 -- | default subtype representation.
-type SubType = String
+type SubType = T.Text
 
 -- | subtype for text content; currently just a string.
 type TextType = SubType
 
-subTypeString :: Type -> String
-subTypeString t = 
-  case break (=='/') (showMIMEType (mimeType t)) of
-   (_,"") -> ""
-   (_,_:bs) -> bs
+subTypeString :: Type -> T.Text
+subTypeString t = T.drop 1 $ snd $ T.break (=='/') (showMIMEType (mimeType t))
 
-majTypeString :: Type -> String
-majTypeString t = 
-  case break (=='/') (showMIMEType (mimeType t)) of
-   (as,_) -> as
+majTypeString :: Type -> T.Text
+majTypeString t = fst $ T.break (=='/') (showMIMEType (mimeType t))
 
 data Multipart
  = Alternative
@@ -98,8 +98,8 @@ data Multipart
  | Parallel
  | Related
  | Signed
- | Extension  String  -- ^ e.g., 'x-foo' (i.e., includes the 'x-' bit)
- | OtherMulti String  -- unrecognized\/uninterpreted.
+ | Extension  T.Text  -- ^ e.g., 'x-foo' (i.e., includes the 'x-' bit)
+ | OtherMulti T.Text  -- unrecognized\/uninterpreted.
                       -- (e.g., appledouble, voice-message, etc.)
    deriving ( Show, Ord, Eq )
 
@@ -107,7 +107,7 @@ isXmlBased :: Type -> Bool
 isXmlBased t = 
   case mimeType t of
      Multipart{} -> False
-     _ -> "+xml" `isSuffixOf` subTypeString t
+     _ -> "+xml" `T.isSuffixOf` subTypeString t
 
 isXmlType :: Type -> Bool
 isXmlType t = isXmlBased t ||
@@ -117,14 +117,14 @@ isXmlType t = isXmlBased t ||
     _             -> False
  where
     -- Note: xml-dtd isn't considered an XML type here.
-  xml_media_types :: [String]
+  xml_media_types :: [T.Text]
   xml_media_types = 
     [ "xml"
     , "xml-external-parsed-entity"
     ]
   
 
-showMultipart :: Multipart -> String
+showMultipart :: Multipart -> T.Text
 showMultipart m = 
  case m of
    Alternative -> "alternative"
@@ -139,13 +139,13 @@ showMultipart m =
    Extension e -> e
    OtherMulti e -> e
    
-type Content = String
+type Content = T.Text
 
 data MIMEValue = MIMEValue
       { mime_val_type     :: Type
       , mime_val_disp     :: Maybe Disposition
       , mime_val_content  :: MIMEContent
-      , mime_val_headers  :: [(String,String)]
+      , mime_val_headers  :: [MIMEParam]
       , mime_val_inc_type :: Bool
       } deriving ( Show, Eq )
 
@@ -173,15 +173,15 @@ data DispType
  = DispInline
  | DispAttachment
  | DispFormData
- | DispOther String
+ | DispOther T.Text
    deriving ( Show, Eq)
 
 data DispParam
- = Name String
- | Filename String
- | CreationDate String
- | ModDate String
- | ReadDate String
- | Size String
- | OtherParam String String
+ = Name T.Text
+ | Filename T.Text
+ | CreationDate T.Text
+ | ModDate T.Text
+ | ReadDate T.Text
+ | Size T.Text
+ | OtherParam T.Text T.Text
    deriving ( Show, Eq)

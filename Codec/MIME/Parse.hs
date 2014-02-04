@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 --------------------------------------------------------------------
 -- |
 -- Module    : Codec.MIME.Pare
@@ -12,14 +13,15 @@
 -- 
 --------------------------------------------------------------------
 module Codec.MIME.Parse
-  ( parseMIMEBody    -- :: [(String,String)] -> String -> MIMEValue
-  , parseMIMEType    -- :: String -> Maybe Type
-  , parseMIMEMessage -- :: String -> MIMEValue
+  ( parseMIMEBody    -- :: [(T.Text,T.Text)] -> T.Text -> MIMEValue
+  , parseMIMEType    -- :: T.Text -> Maybe Type
+  , parseMIMEMessage -- :: T.Text -> MIMEValue
 
-  , parseHeaders     -- :: String -> ([(String,String)], String)
-  , parseMultipart   -- :: Type -> String -> (MIMEValue, String)
-  , parseContentType -- :: String -> Maybe Type
-  , splitMulti       -- :: String -> String -> ([MIMEValue], String)
+  , parseHeaders     -- :: T.Text -> ([(T.Text,T.Text)], T.Text)
+  , parseMultipart   -- :: Type -> T.Text -> (MIMEValue, T.Text)
+  , parseContentType -- :: T.Text -> Maybe Type
+  , splitMulti       -- :: T.Text -> T.Text -> ([MIMEValue], T.Text)
+  , normalizeCRLF
   ) where
 
 import Codec.MIME.Type
@@ -27,8 +29,10 @@ import Codec.MIME.Decode
 
 import Data.Char
 import Data.Maybe
-import Data.List
+import qualified Data.List as L
 import Debug.Trace ( trace )
+import qualified Data.Text as T
+import Data.Monoid(Monoid(..), (<>))
 
 enableTrace :: Bool
 enableTrace = False
@@ -38,7 +42,7 @@ doTrace | enableTrace = trace
         | otherwise   = \_ x -> x
 
 
-parseMIMEBody :: [(String,String)] -> String -> MIMEValue
+parseMIMEBody :: [MIMEParam] -> T.Text -> MIMEValue
 parseMIMEBody headers_in body = result { mime_val_headers = headers }
   where
   result = case mimeType mty of
@@ -48,84 +52,89 @@ parseMIMEBody headers_in body = result { mime_val_headers = headers }
                                  , mime_val_disp    = parseContentDisp headers
                                  , mime_val_content = Single (processBody headers body)
                                  }
-  headers = [ (map toLower k,v) | (k,v) <- headers_in ]
+  headers = [ MIMEParam (T.toLower k) v | (MIMEParam k v) <- headers_in ]
   mty = fromMaybe defaultType
-                       (parseContentType =<< lookupField "content-type" headers)
+                       (parseContentType =<< lookupField "content-type" (paramPairs headers))
 defaultType :: Type
 defaultType = Type { mimeType   = Text "plain"
-                   , mimeParams = [("charset", "us-ascii")]
+                   , mimeParams = [MIMEParam "charset" "us-ascii"]
                    }
 
-parseContentDisp :: [(String,String)] -> Maybe Disposition
+parseContentDisp :: [MIMEParam] -> Maybe Disposition
 parseContentDisp headers =
-  (processDisp . dropFoldingWSP) =<< lookupField "content-disposition" headers
+    (processDisp . dropFoldingWSP) =<< lookupField "content-disposition" (paramPairs headers)
   where
-  processDisp "" = Nothing
-  processDisp xs = Just $
-    case break (\ch -> isSpace ch || ch == ';') xs of
-      (as,"") -> Disposition { dispType = toDispType (map toLower as)
-                             , dispParams = []
-                             }
-      (as,bs) -> Disposition { dispType = toDispType (map toLower as)
-                             , dispParams = processParams (parseParams bs)
-                             }
+    processDisp t | T.null t  = Nothing
+                  | T.null bs = Just $ Disposition { dispType = toDispType (T.toLower as)
+                                                   , dispParams = []
+                                                   }
+                  | otherwise = Just $ Disposition { dispType = toDispType (T.toLower as)
+                                                   , dispParams = processParams (parseParams bs)
+                                                   } 
+      where (as,bs) = T.break (\ch -> isSpace ch || ch == ';') t
 
-  processParams = map procP
-    where
-    procP (as,val)
-      | "name" == asl              = Name val
-      | "filename" == asl          = Filename val
-      | "creation-date" == asl     = CreationDate val
-      | "modification-date" == asl = ModDate val
-      | "read-date" == asl         = ReadDate val
-      | "size" == asl              = Size val
-      | otherwise                  = OtherParam (map toLower as) val
-      where asl = map toLower as
+    processParams = map procP
+      where
+        procP (MIMEParam as val)
+            | "name" == asl              = Name val
+            | "filename" == asl          = Filename val
+            | "creation-date" == asl     = CreationDate val
+            | "modification-date" == asl = ModDate val
+            | "read-date" == asl         = ReadDate val
+            | "size" == asl              = Size val
+            | otherwise                  = OtherParam asl val
+          where asl = T.toLower as
 
-  toDispType t = case t of
-                   "inline"     -> DispInline
-                   "attachment" -> DispAttachment
-                   "form-data"  -> DispFormData
-                   _            -> DispOther t
+    toDispType t = if t == "inline" then DispInline
+                   else if t == "attachment" then DispAttachment
+                   else if t == "form-data"  then DispFormData
+                   else  DispOther t
 
-processBody :: [(String,String)] -> String -> String
+paramPairs :: [MIMEParam] -> [(T.Text, T.Text)]
+paramPairs = map paramPair
+  where
+    paramPair (MIMEParam a b) = (a,b)
+
+processBody :: [MIMEParam] -> T.Text -> T.Text
 processBody headers body =
-  case lookupField "content-transfer-encoding" headers of
+  case lookupField "content-transfer-encoding" $ paramPairs headers of
     Nothing -> body
-    Just v  -> decodeBody v body
+    Just v  -> T.pack $ decodeBody (T.unpack v) $ T.unpack body
 
-normalizeCRLF :: String -> String
-normalizeCRLF ('\r':'\n':xs) = '\r':'\n':normalizeCRLF xs
-normalizeCRLF ('\r':xs) = '\r':'\n':normalizeCRLF xs
-normalizeCRLF ('\n':xs) = '\r':'\n':normalizeCRLF xs
-normalizeCRLF (x:xs) = x:normalizeCRLF xs
-normalizeCRLF [] = []
+normalizeCRLF :: T.Text -> T.Text
+normalizeCRLF t
+    | T.null t = ""
+    | "\r\n" `T.isPrefixOf` t = "\r\n" <> normalizeCRLF (T.drop 2 t)
+    | any (`T.isPrefixOf` t) ["\r", "\n"] = "\r\n" <> normalizeCRLF (T.drop 1 t)
+    | otherwise = let (a,b) = T.break (`elem` "\r\n") t in a <> normalizeCRLF b
   
-parseMIMEMessage :: String -> MIMEValue
+parseMIMEMessage :: T.Text -> MIMEValue
 parseMIMEMessage entity =
   case parseHeaders (normalizeCRLF entity) of
    (as,bs) -> parseMIMEBody as bs
 
-parseHeaders :: String -> ([(String,String)], String)
+parseHeaders :: T.Text -> ([MIMEParam], T.Text)
 parseHeaders str =
   case findFieldName "" str of
     Left (nm, rs) -> parseFieldValue nm (dropFoldingWSP rs)
     Right body    -> ([],body)
  where
-  findFieldName _acc "" = Right ""
-  findFieldName _acc ('\r':'\n':xs) = Right xs
-  findFieldName acc (':':xs) = Left (reverse (dropWhile isHSpace acc), xs)
-  findFieldName acc (x:xs) = findFieldName (x:acc) xs
+  findFieldName acc t 
+    | T.null t = Right ""
+    | "\r\n" `T.isPrefixOf` t = Right $ T.drop 2 t
+    | ":" `T.isPrefixOf` t = Left (T.reverse $ T.dropWhile isHSpace acc, T.drop 1 t)
+    | otherwise = findFieldName (T.take 1 t <> acc) $ T.drop 1 t
 
-  parseFieldValue nm xs =
-    case takeUntilCRLF xs of
-      (as,"") -> ([(nm,as)],"")
-      (as,bs) -> let (zs,ys) = parseHeaders bs in ((nm,as):zs,ys)
+  parseFieldValue nm xs 
+      | T.null bs = ([MIMEParam nm as], "")
+      | otherwise = let (zs,ys) = parseHeaders bs in (MIMEParam nm as :zs, ys)
+    where 
+      (as,bs) = takeUntilCRLF xs
 
-parseMultipart :: Type -> String -> (MIMEValue, String)
+parseMultipart :: Type -> T.Text -> (MIMEValue, T.Text)
 parseMultipart mty body =
-  case lookupField "boundary" (mimeParams mty) of
-    Nothing -> doTrace ("Multipart mime type, " ++ showType mty ++
+  case lookupField "boundary" (paramPairs $ mimeParams mty) of
+    Nothing -> doTrace ("Multipart mime type, " ++ T.unpack (showType mty) ++
       ", has no required boundary parameter. Defaulting to text/plain") $
       (nullMIMEValue{ mime_val_type = defaultType
                     , mime_val_disp = Nothing
@@ -137,71 +146,71 @@ parseMultipart mty body =
 			       }, rs)
       where (vals,rs) = splitMulti bnd body
 
-splitMulti :: String -> String -> ([MIMEValue], String)
+splitMulti :: T.Text -> T.Text -> ([MIMEValue], T.Text)
 splitMulti bnd body_in =
   -- Note: we insert a CRLF if it looks as if the boundary string starts
   -- right off the bat.  No harm done if this turns out to be incorrect.
-  let body = case body_in of
-                '-':'-':_ -> ('\r':'\n':body_in)
-                _ -> body_in
+  let body | "--" `T.isPrefixOf` body_in = "\r\n" <> body_in
+           | otherwise  = body_in
   in case untilMatch dashBoundary body of
-       Nothing           -> ([],"")
-       Just ('-':'-':xs) -> ([],xs)
-       Just xs           -> splitMulti1 (dropTrailer xs)
+       Nothing           -> mempty
+       Just xs  | "--" `T.isPrefixOf` xs    -> ([], T.drop 2 xs)
+                | otherwise                 -> splitMulti1 (dropTrailer xs)
 
  where
-  dashBoundary = ("\r\n--" ++ bnd)
+  dashBoundary = ("\r\n--" <> bnd)
 
-  splitMulti1 xs =
-    case matchUntil dashBoundary xs of
-      ("","") -> ([],"")
-      (as,"") -> ([parseMIMEMessage as],"")
-      (as,'-':'-':bs) -> ([parseMIMEMessage as], dropTrailer bs)
-      (as,bs) -> let (zs,ys) = splitMulti1 (dropTrailer bs)
-                 in ((parseMIMEMessage as) : zs,ys)
+  splitMulti1 xs 
+      | T.null as && T.null bs = ([], "")
+      | T.null bs = ([parseMIMEMessage as],"")
+      | T.isPrefixOf "--" bs    =  ([parseMIMEMessage as], dropTrailer bs)
+      | otherwise   = let (zs,ys) = splitMulti1 (dropTrailer bs)
+                            in ((parseMIMEMessage as) : zs,ys)
 
-  dropTrailer xs =
-    case dropWhile isHSpace xs of
-      '\r':'\n':xs1 -> xs1
-      xs1 -> xs1 -- hmm, flag an error?
+    where
+      (as,bs) = matchUntil dashBoundary xs
 
-parseMIMEType :: String -> Maybe Type
+  dropTrailer xs 
+      | "\r\n" `T.isPrefixOf` xs1 = T.drop 2 xs1
+      | otherwise   = xs1 -- hmm, flag an error?
+    where
+       xs1 = T.dropWhile isHSpace xs 
+
+parseMIMEType :: T.Text -> Maybe Type
 parseMIMEType = parseContentType
 
-parseContentType :: String -> Maybe Type
-parseContentType str =
-   case break (=='/') (dropFoldingWSP str) of
-       (maj,_:minor) ->
-          case break (\ ch -> isHSpace ch || isTSpecial ch) minor of
-            (as,bs)  -> 
-               Just Type { mimeType = toType maj as
-                         , mimeParams = parseParams (dropWhile isHSpace bs)
-                         }
-       _ -> doTrace ("unable to parse content-type: " ++ show str) $ Nothing
- where
-  toType a b = case lookupField (map toLower a) mediaTypes of
-                 Just ctor -> ctor b
-                 _ -> Other a b
+parseContentType :: T.Text -> Maybe Type
+parseContentType str
+    | T.null minor0 = doTrace ("unable to parse content-type: " ++ show str) $ Nothing
+    | otherwise     = Just Type  { mimeType = toType maj as
+                                 , mimeParams = parseParams (T.dropWhile isHSpace bs)
+                                 }
+  where
+    (maj, minor0) = T.break (=='/') (dropFoldingWSP str)
+    minor = T.drop 1 minor0
+    (as, bs) = T.break (\ ch -> isHSpace ch || isTSpecial ch) minor 
+    toType a b = case lookupField (T.toLower a) mediaTypes of
+         Just ctor -> ctor b
+         _ -> Other a b
 
-parseParams :: String -> [(String,String)]
-parseParams "" = []
-parseParams (';':xs) =
-    case break (=='=') (dropFoldingWSP xs) of
-      (_,[]) -> []
-      (nm_raw,_:vs) ->
-        case vs of
-          '"':vs1 ->
-             case break (=='"') vs1 of
-               (val,"") -> [(nm,val)]
-               (val,_:zs) -> (nm,val):parseParams (dropWhile isHSpace zs)
-          _ -> case break (\ ch -> isHSpace ch || isTSpecial ch) vs of
-                 (val,zs) -> (nm,val):parseParams (dropWhile isHSpace zs)
-       where
-        nm = map toLower nm_raw
+parseParams :: T.Text -> [MIMEParam]
+parseParams t   | T.null t          = []
+                | ';' == T.head t   = let (nm_raw, vs0) = T.break (=='=') (dropFoldingWSP $ T.tail t) 
+                                          nm = T.toLower nm_raw in
+                    if T.null vs0 
+                        then []
+                        else let vs = T.tail vs0 in
+                            if not (T.null vs) && T.head vs == '"' 
+                                then let vs1 = T.tail vs 
+                                         (val, zs0) = T.break (=='"') vs1 in
+                                    if T.null zs0 
+                                        then [MIMEParam nm val]
+                                        else MIMEParam nm val : parseParams (T.dropWhile isHSpace $ T.tail zs0)
+                                else let (val, zs) = T.break (\ch -> isHSpace ch || isTSpecial ch) vs in
+                                    MIMEParam nm val : parseParams (T.dropWhile isHSpace zs)
+                | otherwise = doTrace ("Codec.MIME.Parse.parseParams: curious param value -- " ++ show t) []
 
-parseParams cs = doTrace ("Codec.MIME.Parse.parseParams: curious param value -- " ++ show cs) []
-
-mediaTypes :: [(String, String -> MIMEType)]
+mediaTypes :: [(T.Text, T.Text -> MIMEType)]
 mediaTypes =
   [ ("multipart",   (Multipart . toMultipart))
   , ("application", Application)
@@ -212,12 +221,11 @@ mediaTypes =
   , ("text",        Text)
   , ("video",       Video)
   ]
- where toMultipart b = fromMaybe other (lookupField (map toLower b) multipartTypes)
-          where other = case b of
-                          'x':'-':_ -> Extension b
-                          _ -> OtherMulti b
+ where toMultipart b = fromMaybe other (lookupField (T.toLower b) multipartTypes)
+          where other | T.isPrefixOf "x-" b = Extension b
+                      | otherwise           = OtherMulti b
 
-multipartTypes :: [(String, Multipart)]
+multipartTypes :: [(T.Text, Multipart)]
 multipartTypes =
   [ ("alternative", Alternative)
   , ("byteranges",  Byteranges)
@@ -230,18 +238,19 @@ multipartTypes =
   , ("signed",      Signed)
   ]
 
-untilMatch :: String -> String -> Maybe String
-untilMatch "" a  = Just a
-untilMatch _  "" = Nothing
-untilMatch a b | a `isPrefixOf` b = Just $ drop (length a) b
-untilMatch a (_:bs) = untilMatch a bs
+untilMatch :: T.Text -> T.Text -> Maybe T.Text
+untilMatch a b  | T.null a  = Just b
+                | T.null b  = Nothing
+                | a `T.isPrefixOf` b = Just $ T.drop (T.length a) b
+                | otherwise = untilMatch a $ T.tail b
 
-matchUntil :: String -> String -> (String, String)
+matchUntil :: T.Text -> T.Text -> (T.Text, T.Text)
 matchUntil _   "" = ("", "")
 matchUntil str xs
+    | T.null xs = mempty
     -- slow, but it'll do for now.
-  | str `isPrefixOf` xs = ("", drop (length str) xs)
-matchUntil str (x:xs) = let (as,bs) = matchUntil str xs in (x:as,bs)
+    | str `T.isPrefixOf` xs = ("", T.drop (T.length str) xs)
+    | otherwise = let (as,bs) = matchUntil str $ T.tail xs in (T.take 1 xs <> as, bs)
 
 isHSpace :: Char -> Bool
 isHSpace c = c == ' ' || c == '\t'
@@ -249,25 +258,25 @@ isHSpace c = c == ' ' || c == '\t'
 isTSpecial :: Char -> Bool
 isTSpecial x = x `elem` "()<>@,;:\\\"/[]?=" -- "
 
-dropFoldingWSP :: String -> String
-dropFoldingWSP "" = ""
-dropFoldingWSP (x:xs)
- | isHSpace x = dropFoldingWSP xs
-dropFoldingWSP ('\r':'\n':x:xs)
- | isHSpace x = dropFoldingWSP xs
-dropFoldingWSP (x:xs) = x:xs
+dropFoldingWSP :: T.Text -> T.Text
+dropFoldingWSP t | T.null t   = ""
+                 | isHSpace (T.head t) = dropFoldingWSP $ T.tail t
+                 | "\r\n" `T.isPrefixOf` t && not (T.null $ T.drop 2 t) && isHSpace (T.head $ T.drop 2 t) 
+                    = dropFoldingWSP $ T.drop 3 t
+                 | otherwise    = t 
 
-takeUntilCRLF :: String -> (String, String)
+takeUntilCRLF :: T.Text -> (T.Text, T.Text)
 takeUntilCRLF str = go "" str
  where
-  go acc "" = (reverse (dropWhile isHSpace acc), "")
-  go acc ('\r':'\n':x:xs)
-   | isHSpace x = go (' ':acc) xs
-   | otherwise  = (reverse (dropWhile isHSpace acc), x:xs)
-  go acc (x:xs) = go (x:acc) xs
+  go acc t  | T.null t  = (T.reverse (T.dropWhile isHSpace acc), "")
+            | "\r\n" `T.isPrefixOf` t && not (T.null $ T.drop 2 t) && isHSpace (T.head $ T.drop 2 t)  
+                        = go (" " <> acc) (T.drop 3 t)
+            | "\r\n" `T.isPrefixOf` t && not (T.null $ T.drop 2 t)  
+                        = (T.reverse (T.dropWhile isHSpace acc), T.drop 2 t)
+            | otherwise = go (T.take 1 t <> acc) $ T.tail t
 
 -- case in-sensitive lookup of field names or attributes\/parameters.
-lookupField :: String -> [(String,a)] -> Maybe a
+lookupField :: T.Text -> [(T.Text,a)] -> Maybe a
 lookupField n ns = 
    -- assume that inputs have been mostly normalized already 
    -- (i.e., lower-cased), but should the lookup fail fall back
@@ -275,8 +284,6 @@ lookupField n ns =
   case lookup n ns of
     x@Just{} -> x
     Nothing  -> 
-      let nl = map toLower n in
-      case find (\ (y,_) -> nl == map toLower y) ns of
-        Nothing -> Nothing
-	Just (_,x)  -> Just x
+      let nl = T.toLower n in
+      fmap snd $ L.find ((nl==) . T.toLower . fst) ns
       
