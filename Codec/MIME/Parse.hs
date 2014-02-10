@@ -26,6 +26,7 @@ module Codec.MIME.Parse
 
 import Codec.MIME.Type
 import Codec.MIME.Decode
+import Control.Arrow(second)
 
 import Data.Char
 import Data.Maybe
@@ -245,12 +246,18 @@ untilMatch a b  | T.null a  = Just b
                 | otherwise = untilMatch a $ T.tail b
 
 matchUntil :: T.Text -> T.Text -> (T.Text, T.Text)
-matchUntil _   "" = ("", "")
-matchUntil str xs
+-- searching str; returning parts before str and after str
+matchUntil str = second (T.drop $ T.length str) . T.breakOn str
+
+{-
+matchUntil' :: T.Text -> T.Text -> (T.Text, T.Text)
+matchUntil' _   "" = ("", "")
+matchUntil' str xs
     | T.null xs = mempty
     -- slow, but it'll do for now.
     | str `T.isPrefixOf` xs = ("", T.drop (T.length str) xs)
-    | otherwise = let (as,bs) = matchUntil str $ T.tail xs in (T.take 1 xs <> as, bs)
+    | otherwise = let (as,bs) = matchUntil' str $ T.tail xs in (T.take 1 xs <> as, bs)
+-}
 
 isHSpace :: Char -> Bool
 isHSpace c = c == ' ' || c == '\t'
