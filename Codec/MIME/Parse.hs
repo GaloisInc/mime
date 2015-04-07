@@ -107,7 +107,7 @@ normalizeCRLF t
     | T.null t = ""
     | "\r\n" `T.isPrefixOf` t = "\r\n" <> normalizeCRLF (T.drop 2 t)
     | any (`T.isPrefixOf` t) ["\r", "\n"] = "\r\n" <> normalizeCRLF (T.drop 1 t)
-    | otherwise = let (a,b) = T.break (`elem` "\r\n") t in a <> normalizeCRLF b
+    | otherwise = let (a,b) = T.break (`elem` ['\r','\n']) t in a <> normalizeCRLF b
   
 parseMIMEMessage :: T.Text -> MIMEValue
 parseMIMEMessage entity =
@@ -263,7 +263,7 @@ isHSpace :: Char -> Bool
 isHSpace c = c == ' ' || c == '\t'
 
 isTSpecial :: Char -> Bool
-isTSpecial x = x `elem` "()<>@,;:\\\"/[]?=" -- "
+isTSpecial x = x `elem` ("()<>@,;:\\\"/[]?="::String) -- "
 
 dropFoldingWSP :: T.Text -> T.Text
 dropFoldingWSP t | T.null t   = ""
