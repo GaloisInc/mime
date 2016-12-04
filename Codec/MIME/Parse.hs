@@ -103,11 +103,7 @@ processBody headers body =
     Just v  -> T.pack $ decodeBody (T.unpack v) $ T.unpack body
 
 normalizeCRLF :: T.Text -> T.Text
-normalizeCRLF t
-    | T.null t = ""
-    | "\r\n" `T.isPrefixOf` t = "\r\n" <> normalizeCRLF (T.drop 2 t)
-    | any (`T.isPrefixOf` t) ["\r", "\n"] = "\r\n" <> normalizeCRLF (T.drop 1 t)
-    | otherwise = let (a,b) = T.break (`elem` ['\r','\n']) t in a <> normalizeCRLF b
+normalizeCRLF  = T.intercalate "\r\n" . T.lines
   
 parseMIMEMessage :: T.Text -> MIMEValue
 parseMIMEMessage entity =
@@ -139,12 +135,12 @@ parseMultipart mty body =
       ", has no required boundary parameter. Defaulting to text/plain") $
       (nullMIMEValue{ mime_val_type = defaultType
                     , mime_val_disp = Nothing
-		    , mime_val_content = Single body
-		    }, "")
+                    , mime_val_content = Single body
+                    }, "")
     Just bnd -> (nullMIMEValue { mime_val_type = mty
                                , mime_val_disp = Nothing
-			       , mime_val_content = Multi vals
-			       }, rs)
+                               , mime_val_content = Multi vals
+                               }, rs)
       where (vals,rs) = splitMulti bnd body
 
 splitMulti :: T.Text -> T.Text -> ([MIMEValue], T.Text)
