@@ -33,6 +33,8 @@ import Data.Maybe
 import qualified Data.List as L
 import Debug.Trace ( trace )
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TLB
 import Data.Monoid(Monoid(..), (<>))
 
 enableTrace :: Bool
@@ -102,16 +104,16 @@ processBody headers body =
     Nothing -> body
     Just v  -> T.pack $ decodeBody (T.unpack v) $ T.unpack body
 
-normalizeCRLF :: T.Text -> T.Text
+normalizeCRLF :: T.Text -> TLB.Builder
 normalizeCRLF t
     | T.null t = ""
     | "\r\n" `T.isPrefixOf` t = "\r\n" <> normalizeCRLF (T.drop 2 t)
     | any (`T.isPrefixOf` t) ["\r", "\n"] = "\r\n" <> normalizeCRLF (T.drop 1 t)
-    | otherwise = let (a,b) = T.break (`elem` ['\r','\n']) t in a <> normalizeCRLF b
-  
+    | otherwise = let (a,b) = T.break (`elem` ['\r','\n']) t in TLB.fromText a <> normalizeCRLF b
+
 parseMIMEMessage :: T.Text -> MIMEValue
 parseMIMEMessage entity =
-  case parseHeaders (normalizeCRLF entity) of
+  case parseHeaders (TL.toStrict $ TLB.toLazyText $ normalizeCRLF entity) of
    (as,bs) -> parseMIMEBody as bs
 
 parseHeaders :: T.Text -> ([MIMEParam], T.Text)
