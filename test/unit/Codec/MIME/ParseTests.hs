@@ -20,11 +20,12 @@ tests =
             @?= Just ("this is the body\r\n","this is an attachment\n"))
       , testCase "exceptions" (do
           pure ())
-{-
       , testCase "ics" (do
-          runParseEmail ""
-            @?= Nothing)
--}
+          pure ())
+          -- runParseEmail'' multiPartIcsPlain @?= Just icsPart)
+      , testCase "json" (do
+          runParseEmail''' multipartWithJson @?= 
+            Just "{\"GUID\":\"ec5309d0-6b74-477d-9170-7c346a3e0b93\",\"Action\":\"New\",\"BrokerEligible\":true,\"Broker\":18,\"BrokerText\":\"Advanced Advisor Group,LLC\",\"EventType\":25,\"EventTypeText\":\"Event type 21\",\"ooSubject\":\"This is the subject\",\"ooLocation\":\"This is the location \",\"ooBodyText\":\"Whats this field?\",\"ooStart\":\"2017-04-01T01:00:00\",\"ooEnd\":\"2017-04-02T01:30:00\",\"ooRecepients\":[\"kanishka@example.com\"]}\r\n" )
       ]
   ]
 
@@ -44,3 +45,23 @@ runParseEmail' m =
       msg1@(MMT.Single cont) = MMT.mime_val_content mv1
       msg2@(MMT.Single cont2) = MMT.mime_val_content mv2
   in Just (cont, cont2)
+
+runParseEmail'' :: T.Text -> Maybe (T.Text)
+runParseEmail'' m =
+  let mv = MMP.parseMIMEMessage m
+      hs = MMT.mime_val_headers mv  -- to, from, subject
+      multi@(MMT.Multi mvs) = MMT.mime_val_content mv
+      mv1:_ = mvs
+      msg1@(MMT.Multi mvs') = MMT.mime_val_content mv1
+      c1 = last mvs'
+      msg2@(MMT.Single cont2) = MMT.mime_val_content c1
+  in Just cont2
+
+runParseEmail''' :: T.Text -> Maybe (T.Text)
+runParseEmail''' m =
+  let mv = MMP.parseMIMEMessage m
+      hs = MMT.mime_val_headers mv  -- to, from, subject
+      multi@(MMT.Multi mvs) = MMT.mime_val_content mv
+      mv1:mv2:_ = mvs
+      msg1@(MMT.Single cont2) = MMT.mime_val_content mv2
+  in Just cont2
