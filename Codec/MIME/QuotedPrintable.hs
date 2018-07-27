@@ -25,6 +25,7 @@ import Data.Char
 decode :: String -> String
 decode "" = ""
 decode ('=':'\r':'\n':xs) = decode xs -- soft line break.
+decode ('=':'\n':xs) = decode xs -- soft line break. We don't assume \r\n.
 decode ('=':x1:x2:xs)
  | isHexDigit x1 && isHexDigit x2 =
     chr (digitToInt x1 * 16 + digitToInt x2) : decode xs
