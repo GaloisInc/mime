@@ -26,14 +26,14 @@ module Codec.MIME.Parse
 
 import Codec.MIME.Type
 import Codec.MIME.Decode
-import Control.Arrow(second)
+import Control.Arrow (second, (<<<))
+import Control.Monad ((<=<))
 
 import Data.Char
 import Data.Maybe
 import qualified Data.List as L
 import Debug.Trace ( trace )
 import qualified Data.Text as T
-import Data.Monoid(Monoid(..), (<>))
 
 enableTrace :: Bool
 enableTrace = False
@@ -103,12 +103,8 @@ processBody headers body =
     Just v  -> T.pack $ decodeBody (T.unpack v) $ T.unpack body
 
 normalizeCRLF :: T.Text -> T.Text
-normalizeCRLF t
-    | T.null t = ""
-    | "\r\n" `T.isPrefixOf` t = "\r\n" <> normalizeCRLF (T.drop 2 t)
-    | any (`T.isPrefixOf` t) ["\r", "\n"] = "\r\n" <> normalizeCRLF (T.drop 1 t)
-    | otherwise = let (a,b) = T.break (`elem` ['\r','\n']) t in a <> normalizeCRLF b
-  
+normalizeCRLF = T.intercalate "\r\n" <<< T.split (`elem` ['\r', '\n']) <=< T.splitOn "\r\n"
+
 parseMIMEMessage :: T.Text -> MIMEValue
 parseMIMEMessage entity =
   case parseHeaders (normalizeCRLF entity) of
